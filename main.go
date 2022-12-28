@@ -8,11 +8,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 
 	cv "github.com/nirasan/go-oauth-pkce-code-verifier"
+	"github.com/zalando/go-keyring"
 	spotifyauth "github.com/zmb3/spotify/v2/auth"
 	"golang.org/x/oauth2"
 
@@ -27,14 +29,17 @@ const redirectURI = "http://localhost:8080/callback"
 var (
 	auth = spotifyauth.New(spotifyauth.WithRedirectURL(redirectURI),
 		spotifyauth.WithScopes(
-			spotifyauth.ScopeUserReadPrivate, 
-			spotifyauth.ScopePlaylistModifyPrivate, 
+			spotifyauth.ScopeUserReadPrivate,
+			spotifyauth.ScopePlaylistModifyPrivate,
 			spotifyauth.ScopePlaylistModifyPublic,
 		), spotifyauth.WithClientID("0673725a49f845f0b2ee585d87c0df67"))
-	ch              = make(chan *spotify.Client)
+	ch              = make(chan *spotify.Client, 1)
 	state           = "abc123"
 	codeVerifier, _ = cv.CreateCodeVerifier()
 	codeChallenge   = codeVerifier.CodeChallengeS256()
+	service         = "spotify-playlist-sorter"
+	user            = "user"
+	password        = "secret"
 	// These should be randomly generated for each request
 	//  More information on generating these can be found here,
 	// https://www.oauth.com/playground/authorization-code-with-pkce.html
@@ -43,18 +48,26 @@ var (
 )
 
 func main() {
-	// first start an HTTP server
-	http.HandleFunc("/callback", completeAuth)
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Got request for:", r.URL.String())
-	})
-	go http.ListenAndServe(":8080", nil)
+	tokenString, err := keyring.Get(service, user)
+	if err == nil {
+		fmt.Println("Loading token from keyring")
+		var token oauth2.Token
+		json.Unmarshal([]byte(tokenString), &token)
+		loadClient(&token)
+	} else {
+		// first start an HTTP server
+		http.HandleFunc("/callback", completeAuth)
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			log.Println("Got request for:", r.URL.String())
+		})
+		go http.ListenAndServe(":8080", nil)
 
-	url := auth.AuthURL(state,
-		oauth2.SetAuthURLParam("code_challenge_method", "S256"),
-		oauth2.SetAuthURLParam("code_challenge", codeChallenge),
-	)
-	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
+		url := auth.AuthURL(state,
+			oauth2.SetAuthURLParam("code_challenge_method", "S256"),
+			oauth2.SetAuthURLParam("code_challenge", codeChallenge),
+		)
+		fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
+	}
 
 	// wait for auth to complete
 	client := <-ch
@@ -98,9 +111,16 @@ func completeAuth(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		log.Fatalf("State mismatch: %s != %s\n", st, state)
 	}
+	fmt.Println("Saving token...")
+	tokenAsString, _ := json.Marshal(tok)
+	keyring.Set(service, user, string(tokenAsString))
+	loadClient(tok)
+}
+
+func loadClient(token *oauth2.Token) {
 	// use the token to get an authenticated client
-	client := spotify.New(auth.Client(r.Context(), tok))
-	fmt.Fprintf(w, "Login Completed!")
+	client := spotify.New(auth.Client(context.Background(), token))
+	fmt.Println("Login Completed!")
 	ch <- client
 	close(ch)
 }
