@@ -25,7 +25,12 @@ import (
 const redirectURI = "http://localhost:8080/callback"
 
 var (
-	auth            = spotifyauth.New(spotifyauth.WithRedirectURL(redirectURI), spotifyauth.WithScopes(spotifyauth.ScopeUserReadPrivate), spotifyauth.WithClientID("0673725a49f845f0b2ee585d87c0df67"))
+	auth = spotifyauth.New(spotifyauth.WithRedirectURL(redirectURI),
+		spotifyauth.WithScopes(
+			spotifyauth.ScopeUserReadPrivate, 
+			spotifyauth.ScopePlaylistModifyPrivate, 
+			spotifyauth.ScopePlaylistModifyPublic,
+		), spotifyauth.WithClientID("0673725a49f845f0b2ee585d87c0df67"))
 	ch              = make(chan *spotify.Client)
 	state           = "abc123"
 	codeVerifier, _ = cv.CreateCodeVerifier()
@@ -62,8 +67,22 @@ func main() {
 	fmt.Println("You are logged in as:", user.ID)
 	playlistPage, _ := client.GetPlaylistsForUser(context.Background(), user.ID)
 	for _, playlist := range playlistPage.Playlists {
-		if playlist.Owner.ID == user.ID {
-			fmt.Println(playlist.Name)
+		if playlist.Owner.ID == user.ID && playlist.Name == "asdf" {
+			firstItemsPage, _ := client.GetPlaylistItems(context.Background(), playlist.ID)
+			items := firstItemsPage.Items
+			for firstItemsPage.Next != "" {
+				client.NextPage(context.Background(), firstItemsPage)
+				items = append(items, firstItemsPage.Items...)
+			}
+			for index, item := range items {
+				fmt.Println(index, item.Track.Track.Name, item.Track.Track.Artists[0].Name)
+			}
+			snapshotId, error := client.ReorderPlaylistTracks(context.Background(), playlist.ID, spotify.PlaylistReorderOptions{RangeStart: 3035, RangeLength: 1, InsertBefore: 3030})
+			if error != nil {
+				fmt.Println(error.Error())
+			} else {
+				fmt.Println("\nMoved 3035 to 3030, snapId: ", snapshotId)
+			}
 		}
 	}
 }
