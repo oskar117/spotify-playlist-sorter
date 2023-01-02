@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	cv "github.com/nirasan/go-oauth-pkce-code-verifier"
@@ -49,13 +50,25 @@ var (
 )
 
 type SongGroup struct {
-	start, end int
-	songTitles []string
+	first, last int
+	songTitles  []string
 }
 
 type Artist struct {
-	name string
+	name       string
 	songGroups []*SongGroup
+}
+
+func (artist *Artist) addSong(title string, index int) {
+	if len(artist.songGroups) > 0 {
+		lastGroup := artist.songGroups[len(artist.songGroups)-1]
+		if index-lastGroup.last == 1 {
+			lastGroup.last++
+			lastGroup.songTitles = append(lastGroup.songTitles, title)
+			return
+		}
+	}
+	artist.songGroups = append(artist.songGroups, &SongGroup{index, index, []string{title}})
 }
 
 func main() {
@@ -95,15 +108,26 @@ func main() {
 		if playlist.Owner.ID == spotifyUser.ID && playlist.Name == "asdf" {
 			firstItemsPage, _ := client.GetPlaylistItems(context.Background(), playlist.ID)
 			items := firstItemsPage.Items
-			artists := make(map[string]bool)
+			artists := make(map[string]*Artist)
 			for firstItemsPage.Next != "" {
 				client.NextPage(context.Background(), firstItemsPage)
 				items = append(items, firstItemsPage.Items...)
 			}
-			for _, item := range items {
-				artist := item.Track.Track.Artists[0].Name
-				// fmt.Println(index, item.Track.Track.Name, item.Track.Track.Artists[0].Name)
-				artists[artist] = true
+			for index, item := range items {
+				artistName := item.Track.Track.Artists[0].Name
+				artist, ok := artists[artistName]
+				if !ok {
+					artist = &Artist{artistName, make([]*SongGroup, 0)}
+					artists[artistName] = artist
+				}
+				artist.addSong(item.Track.Track.Name, index)
+			}
+			choosenArtist := artists[os.Args[1]]
+			for x, group := range choosenArtist.songGroups {
+				fmt.Println("Group", x, "first index", group.first, "last index", group.last)
+				for i, song := range group.songTitles {
+					fmt.Println(i + group.first, song)
+				}
 			}
 			// snapshotId, error := client.ReorderPlaylistTracks(context.Background(), playlist.ID, spotify.PlaylistReorderOptions{RangeStart: 3035, RangeLength: 1, InsertBefore: 3030})
 			// if error != nil {
