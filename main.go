@@ -15,6 +15,8 @@ import (
 	"os"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	cv "github.com/nirasan/go-oauth-pkce-code-verifier"
 	"github.com/zalando/go-keyring"
 	spotifyauth "github.com/zmb3/spotify/v2/auth"
@@ -27,6 +29,99 @@ import (
 // You must register an application at Spotify's developer portal
 // and enter this value.
 const redirectURI = "http://localhost:8080/callback"
+
+type model struct {
+	choices  []string         // items on the to-do list
+	cursor   int              // which to-do list item our cursor is pointing at
+	selected map[int]struct{} // which to-do items are selected
+}
+
+func initialModel() model {
+	return model{
+		// Our to-do list is a grocery list
+		choices: []string{"Buy carrots", "Buy celery", "Buy kohlrabi"},
+
+		// A map which indicates which choices are selected. We're using
+		// the  map like a mathematical set. The keys refer to the indexes
+		// of the `choices` slice, above.
+		selected: make(map[int]struct{}),
+	}
+}
+
+func (m model) Init() tea.Cmd {
+	// Just return `nil`, which means "no I/O right now, please."
+	return nil
+}
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+
+	// Is it a key press?
+	case tea.KeyMsg:
+
+		// Cool, what was the actual key pressed?
+		switch msg.String() {
+
+		// These keys should exit the program.
+		case "ctrl+c", "q":
+			return m, tea.Quit
+
+		// The "up" and "k" keys move the cursor up
+		case "up", "k":
+			if m.cursor > 0 {
+				m.cursor--
+			}
+
+		// The "down" and "j" keys move the cursor down
+		case "down", "j":
+			if m.cursor < len(m.choices)-1 {
+				m.cursor++
+			}
+
+		// The "enter" key and the spacebar (a literal space) toggle
+		// the selected state for the item that the cursor is pointing at.
+		case "enter", " ":
+			_, ok := m.selected[m.cursor]
+			if ok {
+				delete(m.selected, m.cursor)
+			} else {
+				m.selected[m.cursor] = struct{}{}
+			}
+		}
+	}
+
+	// Return the updated model to the Bubble Tea runtime for processing.
+	// Note that we're not returning a command.
+	return m, nil
+}
+
+func (m model) View() string {
+    // The header
+    s := "What should we buy at the market?\n\n"
+
+    // Iterate over our choices
+    for i, choice := range m.choices {
+
+        // Is the cursor pointing at this choice?
+        cursor := " " // no cursor
+        if m.cursor == i {
+            cursor = ">" // cursor!
+        }
+
+        // Is this choice selected?
+        checked := " " // not selected
+        if _, ok := m.selected[i]; ok {
+            checked = "x" // selected!
+        }
+
+        // Render the row
+        s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
+    }
+
+    // The footer
+    s += "\nPress q to quit.\n"
+	return lipgloss.JoinHorizontal(lipgloss.Top, s, s)
+}
+
 
 var (
 	auth = spotifyauth.New(spotifyauth.WithRedirectURL(redirectURI),
@@ -104,6 +199,14 @@ func main() {
 	}
 	fmt.Println("You are logged in as:", spotifyUser.ID)
 	playlistPage, _ := client.GetPlaylistsForUser(context.Background(), spotifyUser.ID)
+
+	p := tea.NewProgram(initialModel())
+    if _, err := p.Run(); err != nil {
+        fmt.Printf("Alas, there's been an error: %v", err)
+        os.Exit(1)
+    }
+	os.Exit(6)
+
 	for _, playlist := range playlistPage.Playlists {
 		if playlist.Owner.ID == spotifyUser.ID && playlist.Name == "asdf" {
 			firstItemsPage, _ := client.GetPlaylistItems(context.Background(), playlist.ID)
@@ -126,7 +229,7 @@ func main() {
 			for x, group := range choosenArtist.songGroups {
 				fmt.Println("Group", x, "first index", group.first, "last index", group.last)
 				for i, song := range group.songTitles {
-					fmt.Println(i + group.first, song)
+					fmt.Println(i+group.first, song)
 				}
 			}
 			// snapshotId, error := client.ReorderPlaylistTracks(context.Background(), playlist.ID, spotify.PlaylistReorderOptions{RangeStart: 3035, RangeLength: 1, InsertBefore: 3030})
