@@ -1,4 +1,4 @@
-module main
+module github.com/oskar117/spotify-playlist-sorter
 
 go 1.19
 
