@@ -33,7 +33,6 @@ type model struct {
 }
 
 func InitialModel(artistNames []list.Item, artists map[string]*sorter.Artist) model {
-	fmt.Println(artistNames)
 	delegate := list.NewDefaultDelegate()
 	delegate.ShowDescription = false
 	list := list.New(artistNames, delegate, 0, 0)
@@ -63,6 +62,7 @@ func (m model) Init() tea.Cmd {
 	return nil
 }
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 
 	// Is it a key press?
@@ -101,6 +101,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
+		var cmd tea.Cmd
+		m.artistsList, cmd = m.artistsList.Update(msg)
+		cmds = append(cmds, cmd)
 		m.songGroups.SetContent(buildViewport(*m.artists[m.artistsList.SelectedItem().FilterValue()]))
 	case tea.WindowSizeMsg:
 		h, v := msg.Width, msg.Height
@@ -108,9 +111,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.songGroups = viewport.New(h/2, v)
 		m.songGroups.SetContent(buildViewport(*m.artists[m.artistsList.SelectedItem().FilterValue()]))
 	}
-	var cmd tea.Cmd
-	m.artistsList, cmd = m.artistsList.Update(msg)
-	return m, tea.Batch(cmd)
+	// var cmd tea.Cmd
+	// m.artistsList, cmd = m.artistsList.Update(msg)
+	// cmds = append(cmds, cmd)
+	return m, tea.Batch(cmds...)
 	// Return the updated model to the Bubble Tea runtime for processing.
 	// Note that we're not returning a command.
 	// return m, nil
