@@ -14,8 +14,11 @@ import (
 	"net/http"
 	"os"
 	"time"
-	"github.com/oskar117/spotify-playlist-sorter/internal/tui"
 
+	"github.com/oskar117/spotify-playlist-sorter/internal/tui"
+	"github.com/oskar117/spotify-playlist-sorter/internal/sorter"
+
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	cv "github.com/nirasan/go-oauth-pkce-code-verifier"
 	"github.com/zalando/go-keyring"
@@ -51,28 +54,6 @@ var (
 	// codeChallenge = "ZhZJzPQXYBMjH8FlGAdYK5AndohLzFfZT-8J7biT7ig"
 )
 
-type SongGroup struct {
-	first, last int
-	songTitles  []string
-}
-
-type Artist struct {
-	name       string
-	songGroups []*SongGroup
-}
-
-func (artist *Artist) addSong(title string, index int) {
-	if len(artist.songGroups) > 0 {
-		lastGroup := artist.songGroups[len(artist.songGroups)-1]
-		if index-lastGroup.last == 1 {
-			lastGroup.last++
-			lastGroup.songTitles = append(lastGroup.songTitles, title)
-			return
-		}
-	}
-	artist.songGroups = append(artist.songGroups, &SongGroup{index, index, []string{title}})
-}
-
 func main() {
 	// first start an HTTP server
 	http.HandleFunc("/callback", completeAuth)
@@ -107,18 +88,12 @@ func main() {
 	fmt.Println("You are logged in as:", spotifyUser.ID)
 	playlistPage, _ := client.GetPlaylistsForUser(context.Background(), spotifyUser.ID)
 
-	p := tea.NewProgram(tui.InitialModel())
-    if _, err := p.Run(); err != nil {
-        fmt.Printf("Alas, there's been an error: %v", err)
-        os.Exit(1)
-    }
-	os.Exit(6)
-
+	artistNames := make([]list.Item, 0)
+	artists := make(map[string]*sorter.Artist)
 	for _, playlist := range playlistPage.Playlists {
 		if playlist.Owner.ID == spotifyUser.ID && playlist.Name == "asdf" {
 			firstItemsPage, _ := client.GetPlaylistItems(context.Background(), playlist.ID)
 			items := firstItemsPage.Items
-			artists := make(map[string]*Artist)
 			for firstItemsPage.Next != "" {
 				client.NextPage(context.Background(), firstItemsPage)
 				items = append(items, firstItemsPage.Items...)
@@ -127,18 +102,20 @@ func main() {
 				artistName := item.Track.Track.Artists[0].Name
 				artist, ok := artists[artistName]
 				if !ok {
-					artist = &Artist{artistName, make([]*SongGroup, 0)}
+					artist = &sorter.Artist{Name: artistName, SongGroups: make([]*sorter.SongGroup, 0)}
+					artistNames = append(artistNames, tui.ViewArtist{Name: artist.Name})
 					artists[artistName] = artist
 				}
-				artist.addSong(item.Track.Track.Name, index)
+				artist.AddSong(item.Track.Track.Name, index)
 			}
-			choosenArtist := artists[os.Args[1]]
-			for x, group := range choosenArtist.songGroups {
-				fmt.Println("Group", x, "first index", group.first, "last index", group.last)
-				for i, song := range group.songTitles {
-					fmt.Println(i+group.first, song)
-				}
-			}
+			// choosenArtist := artists[os.Args[1]]
+			// for x, group := range choosenArtist.songGroups {
+			// 	fmt.Println("Group", x, "first index", group.first, "last index", group.last)
+			// 	for i, song := range group.songTitles {
+			// 		fmt.Println(i+group.first, song)
+			// 	}
+			// }
+
 			// snapshotId, error := client.ReorderPlaylistTracks(context.Background(), playlist.ID, spotify.PlaylistReorderOptions{RangeStart: 3035, RangeLength: 1, InsertBefore: 3030})
 			// if error != nil {
 			// 	fmt.Println(error.Error())
@@ -147,6 +124,13 @@ func main() {
 			// }
 		}
 	}
+	p := tea.NewProgram(tui.InitialModel(artistNames, artists), tea.WithAltScreen())
+    if _, err := p.Run(); err != nil {
+        fmt.Printf("Alas, there's been an error: %v", err)
+        os.Exit(1)
+    }
+	os.Exit(6)
+
 }
 
 func completeAuth(w http.ResponseWriter, r *http.Request) {

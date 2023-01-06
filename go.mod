@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/alessio/shellescape v1.4.1 // indirect
+	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52 v1.0.3 // indirect
 	github.com/charmbracelet/bubbles v0.14.0 // indirect
 	github.com/charmbracelet/bubbletea v0.23.1 // indirect
@@ -22,6 +23,7 @@ require (
 	github.com/muesli/termenv v0.13.0 // indirect
 	github.com/nirasan/go-oauth-pkce-code-verifier v0.0.0-20220510032225-4f9f17eaec4c // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/sahilm/fuzzy v0.1.0 // indirect
 	github.com/zalando/go-keyring v0.2.1 // indirect
 	github.com/zmb3/spotify v1.3.0 // indirect
 	github.com/zmb3/spotify/v2 v2.3.0 // indirect
