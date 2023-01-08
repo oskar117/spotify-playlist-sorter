@@ -11,6 +11,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+type activeFocus int
+
+const (
+	listFocus activeFocus = iota
+	songGroupFocus activeFocus = iota
+)
 
 type ViewArtist struct {
 	Name string
@@ -27,6 +33,8 @@ type model struct {
 	artistsList list.Model
 	songGroups  viewport.Model
 	artists     map[string]*sorter.Artist
+	selected	string
+	activeFocus activeFocus
 }
 
 func InitialModel(artistNames []list.Item, artists map[string]*sorter.Artist) model {
@@ -40,6 +48,7 @@ func InitialModel(artistNames []list.Item, artists map[string]*sorter.Artist) mo
 		artistsList: list,
 		songGroups:  viewport,
 		artists:     artists,
+		activeFocus: listFocus,
 	}
 }
 
@@ -48,21 +57,38 @@ func (m model) Init() tea.Cmd {
 }
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
-		var cmd tea.Cmd
-		m.artistsList, cmd = m.artistsList.Update(msg)
-		cmds = append(cmds, cmd)
-		m.songGroups.SetContent(buildViewport(*m.artists[m.artistsList.SelectedItem().FilterValue()]))
+		if msg.String() == "enter" {
+			m.selected = m.artistsList.SelectedItem().FilterValue()
+			m.activeFocus = songGroupFocus
+		} 
+		if msg.String() == "esc" {
+			m.selected = ""
+			m.activeFocus = listFocus
+			if m.artistsList.FilterState() == list.Unfiltered {
+				return m, nil
+			}
+		}
 	case tea.WindowSizeMsg:
 		h, v := msg.Width, msg.Height
 		m.artistsList.SetSize(h/2, v)
 		m.songGroups = viewport.New(h/2, v)
 		m.songGroups.SetContent(buildViewport(*m.artists[m.artistsList.SelectedItem().FilterValue()]))
 	}
+	switch m.activeFocus {
+		case listFocus:
+			m.artistsList, cmd = m.artistsList.Update(msg)
+			cmds = append(cmds, cmd)
+			m.songGroups.SetContent(buildViewport(*m.artists[m.artistsList.SelectedItem().FilterValue()]))
+		case songGroupFocus:
+			m.songGroups, cmd = m.songGroups.Update(msg)
+	}
+	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
 
