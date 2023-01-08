@@ -11,10 +11,11 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+
 type activeFocus int
 
 const (
-	listFocus activeFocus = iota
+	listFocus      activeFocus = iota
 	songGroupFocus activeFocus = iota
 )
 
@@ -23,7 +24,14 @@ type ViewArtist struct {
 	Desc string
 }
 
-var docStyle = lipgloss.NewStyle().Margin(1, 2)
+var (
+	docStyle           = lipgloss.NewStyle().Margin(1, 2)
+	focusedBorderStyle = lipgloss.NewStyle().
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(lipgloss.Color("238"))
+	blurredBorderStyle = lipgloss.NewStyle().
+				Border(lipgloss.HiddenBorder())
+)
 
 func (i ViewArtist) FilterValue() string { return i.Name }
 func (i ViewArtist) Description() string { return i.Desc }
@@ -33,7 +41,7 @@ type model struct {
 	artistsList list.Model
 	songGroups  viewport.Model
 	artists     map[string]*sorter.Artist
-	selected	string
+	selected    string
 	activeFocus activeFocus
 }
 
@@ -66,7 +74,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.String() == "enter" {
 			m.selected = m.artistsList.SelectedItem().FilterValue()
 			m.activeFocus = songGroupFocus
-		} 
+		}
 		if msg.String() == "esc" {
 			m.selected = ""
 			m.activeFocus = listFocus
@@ -76,17 +84,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		h, v := msg.Width, msg.Height
-		m.artistsList.SetSize(h/2, v)
-		m.songGroups = viewport.New(h/2, v)
+		m.artistsList.SetSize(h/2, v-10)
+		m.songGroups = viewport.New(h, v-10)
 		m.songGroups.SetContent(buildViewport(*m.artists[m.artistsList.SelectedItem().FilterValue()]))
 	}
 	switch m.activeFocus {
-		case listFocus:
-			m.artistsList, cmd = m.artistsList.Update(msg)
-			cmds = append(cmds, cmd)
-			m.songGroups.SetContent(buildViewport(*m.artists[m.artistsList.SelectedItem().FilterValue()]))
-		case songGroupFocus:
-			m.songGroups, cmd = m.songGroups.Update(msg)
+	case listFocus:
+		m.artistsList, cmd = m.artistsList.Update(msg)
+		cmds = append(cmds, cmd)
+		m.songGroups.SetContent(buildViewport(*m.artists[m.artistsList.SelectedItem().FilterValue()]))
+	case songGroupFocus:
+		m.songGroups, cmd = m.songGroups.Update(msg)
 	}
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
@@ -104,5 +112,13 @@ func buildViewport(choosen sorter.Artist) string {
 }
 
 func (m model) View() string {
-	return lipgloss.JoinHorizontal(lipgloss.Top, m.artistsList.View(), m.songGroups.View())
+	artistsList := m.artistsList.View()
+	songGroupsView := m.songGroups.View()
+	switch m.activeFocus {
+	case listFocus:
+		artistsList = focusedBorderStyle.Margin(2).Render(artistsList)
+	case songGroupFocus:
+		songGroupsView = focusedBorderStyle.Margin(2).Render(songGroupsView)
+	}
+	return lipgloss.JoinHorizontal(lipgloss.Top, artistsList, songGroupsView)
 }
