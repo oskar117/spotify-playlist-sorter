@@ -32,6 +32,7 @@ type model struct {
 func InitialModel(artistNames []list.Item, artists map[string]*sorter.Artist) model {
 	delegate := list.NewDefaultDelegate()
 	delegate.ShowDescription = false
+	delegate.SetSpacing(0)
 	list := list.New(artistNames, delegate, 0, 0)
 	list.Title = "Spotify Playlist Sorter"
 	viewport := viewport.New(0, 0)
