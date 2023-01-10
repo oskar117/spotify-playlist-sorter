@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/oskar117/spotify-playlist-sorter/internal/sorter"
+	"github.com/oskar117/spotify-playlist-sorter/internal/tui/songgroups"
 
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -25,7 +25,8 @@ type ViewArtist struct {
 }
 
 var (
-	docStyle           = lipgloss.NewStyle().Margin(1, 2)
+	docStyle = lipgloss.NewStyle().
+			Margin(1, 2)
 	focusedBorderStyle = lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(lipgloss.Color("238"))
@@ -39,7 +40,7 @@ func (i ViewArtist) Title() string       { return i.Name }
 
 type model struct {
 	artistsList list.Model
-	songGroups  viewport.Model
+	songGroups  songgroups.Model
 	artists     map[string]*sorter.Artist
 	selected    string
 	activeFocus activeFocus
@@ -51,7 +52,7 @@ func InitialModel(artistNames []list.Item, artists map[string]*sorter.Artist) mo
 	delegate.SetSpacing(0)
 	list := list.New(artistNames, delegate, 0, 0)
 	list.Title = "Spotify Playlist Sorter"
-	viewport := viewport.New(0, 0)
+	viewport := songgroups.New(0, 0)
 	return model{
 		artistsList: list,
 		songGroups:  viewport,
@@ -63,6 +64,7 @@ func InitialModel(artistNames []list.Item, artists map[string]*sorter.Artist) mo
 func (m model) Init() tea.Cmd {
 	return nil
 }
+
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	var cmd tea.Cmd
@@ -85,7 +87,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		h, v := msg.Width, msg.Height
 		m.artistsList.SetSize(h/2, v-10)
-		m.songGroups = viewport.New(h, v-10)
+		m.songGroups = songgroups.New(h, v-10)
 		m.songGroups.SetContent(buildViewport(*m.artists[m.artistsList.SelectedItem().FilterValue()]))
 	}
 	switch m.activeFocus {
@@ -107,6 +109,7 @@ func buildViewport(choosen sorter.Artist) string {
 		for i, song := range group.SongTitles {
 			builder.WriteString(fmt.Sprintln(i+group.First, song))
 		}
+		builder.WriteString("\n")
 	}
 	return builder.String()
 }
