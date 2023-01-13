@@ -1,9 +1,6 @@
 package tui
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/oskar117/spotify-playlist-sorter/internal/sorter"
 	"github.com/oskar117/spotify-playlist-sorter/internal/tui/songgroups"
 
@@ -39,11 +36,12 @@ func (i ViewArtist) Description() string { return i.Desc }
 func (i ViewArtist) Title() string       { return i.Name }
 
 type model struct {
-	artistsList list.Model
-	songGroups  songgroups.Model
-	artists     map[string]*sorter.Artist
-	selected    string
-	activeFocus activeFocus
+	artistsList         list.Model
+	songGroups          songgroups.Model
+	artists             map[string]*sorter.Artist
+	selected            string
+	activeFocus         activeFocus
+	songGroupsViewWidth int
 }
 
 func InitialModel(artistNames []list.Item, artists map[string]*sorter.Artist) model {
@@ -86,15 +84,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		h, v := msg.Width, msg.Height
-		m.artistsList.SetSize(h/2, v-10)
-		m.songGroups = songgroups.New(h, v-10)
-		m.songGroups.SetContent(buildViewport(*m.artists[m.artistsList.SelectedItem().FilterValue()]))
+		borderHeight := blurredBorderStyle.GetHorizontalFrameSize()
+		m.artistsList.SetSize(h/2, v-borderHeight)
+		m.songGroups.SetSize(h/2, v-borderHeight)
+		m.songGroupsViewWidth = h - lipgloss.Width(m.artistsList.View()) - 2*blurredBorderStyle.GetVerticalFrameSize()
+		m.songGroups.ChangeArtist(*m.artists[m.artistsList.SelectedItem().FilterValue()])
 	}
 	switch m.activeFocus {
 	case listFocus:
 		m.artistsList, cmd = m.artistsList.Update(msg)
 		cmds = append(cmds, cmd)
-		m.songGroups.SetContent(buildViewport(*m.artists[m.artistsList.SelectedItem().FilterValue()]))
+		m.songGroups.ChangeArtist(*m.artists[m.artistsList.SelectedItem().FilterValue()])
 	case songGroupFocus:
 		m.songGroups, cmd = m.songGroups.Update(msg)
 	}
@@ -102,26 +102,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func buildViewport(choosen sorter.Artist) string {
-	var builder strings.Builder
-	for x, group := range choosen.SongGroups {
-		builder.WriteString(fmt.Sprintln("Group", x, "first index", group.First, "last index", group.Last))
-		for i, song := range group.SongTitles {
-			builder.WriteString(fmt.Sprintln(i+group.First, song))
-		}
-		builder.WriteString("\n")
-	}
-	return builder.String()
-}
-
 func (m model) View() string {
 	artistsList := m.artistsList.View()
 	songGroupsView := m.songGroups.View()
 	switch m.activeFocus {
 	case listFocus:
-		artistsList = focusedBorderStyle.Margin(2).Render(artistsList)
+		artistsList = focusedBorderStyle.UnsetWidth().Render(artistsList)
+		songGroupsView = blurredBorderStyle.Width(m.songGroupsViewWidth).Render(songGroupsView)
 	case songGroupFocus:
-		songGroupsView = focusedBorderStyle.Margin(2).Render(songGroupsView)
+		artistsList = blurredBorderStyle.UnsetWidth().Render(artistsList)
+		songGroupsView = focusedBorderStyle.Width(m.songGroupsViewWidth).Render(songGroupsView)
 	}
 	return lipgloss.JoinHorizontal(lipgloss.Top, artistsList, songGroupsView)
 }
