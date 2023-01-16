@@ -26,7 +26,7 @@ var (
 			Margin(1, 2)
 	focusedBorderStyle = lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
-				BorderForeground(lipgloss.Color("238"))
+				BorderForeground(lipgloss.Color("283"))
 	blurredBorderStyle = lipgloss.NewStyle().
 				Border(lipgloss.HiddenBorder())
 )
@@ -71,10 +71,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
-		if msg.String() == "enter" {
-			m.selected = m.artistsList.SelectedItem().FilterValue()
-			m.activeFocus = songGroupFocus
-		}
 		if msg.String() == "esc" {
 			m.selected = ""
 			m.activeFocus = listFocus
@@ -92,7 +88,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	switch m.activeFocus {
 	case listFocus:
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			if msg.String() == "enter" {
+				m.selected = m.artistsList.SelectedItem().FilterValue()
+				m.activeFocus = songGroupFocus
+			}
+		}
 		m.artistsList, cmd = m.artistsList.Update(msg)
+
 		cmds = append(cmds, cmd)
 		m.songGroups.ChangeArtist(*m.artists[m.artistsList.SelectedItem().FilterValue()])
 	case songGroupFocus:

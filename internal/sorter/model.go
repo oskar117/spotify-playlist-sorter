@@ -21,3 +21,11 @@ func (artist *Artist) AddSong(title string, index int) {
 	}
 	artist.SongGroups = append(artist.SongGroups, &SongGroup{index, index, []string{title}})
 }
+
+func (group *SongGroup) instertAtEnd(songGroup SongGroup) {
+	group.SongTitles = append(group.SongTitles, songGroup.SongTitles...)
+}
+
+func (group *SongGroup) instertAtBeginning(songGroup SongGroup) {
+	group.SongTitles = append(songGroup.SongTitles, group.SongTitles...)
+}
