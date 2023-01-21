@@ -59,7 +59,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				if !m.isSelected {
 					m.highlightedGroupIndex--
 				} else {
-					if m.moveLocation == bottom {
+					if m.moveLocation == bottom || m.selectedGroupIndex == m.highlightedGroupIndex {
 						m.moveLocation = top
 						m.selectedGroupIndex--
 					} else {
@@ -72,7 +72,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				if !m.isSelected {
 					m.highlightedGroupIndex++
 				} else {
-					if m.moveLocation == bottom {
+					if m.moveLocation == bottom && m.selectedGroupIndex != m.highlightedGroupIndex {
 						m.moveLocation = top
 					} else {
 						m.moveLocation = bottom
