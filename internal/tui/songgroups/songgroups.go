@@ -58,25 +58,31 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			if m.highlightedGroupIndex > 0 {
 				if !m.isSelected {
 					m.highlightedGroupIndex--
+				} else if m.selectedGroupIndex == m.highlightedGroupIndex {
+					m.selectedGroupIndex--
+					m.moveLocation = bottom
 				} else {
-					if m.moveLocation == bottom || m.selectedGroupIndex == m.highlightedGroupIndex {
+					if m.moveLocation == bottom {
 						m.moveLocation = top
-						m.selectedGroupIndex--
 					} else {
 						m.moveLocation = bottom
+						m.selectedGroupIndex--
 					}
 				}
 			}
 		case key.Matches(msg, m.viewport.KeyMap.Down):
-			if m.highlightedGroupIndex < len(m.artist.SongGroups)-1 {
+			if m.highlightedGroupIndex < len(m.artist.SongGroups) - 1 {
 				if !m.isSelected {
 					m.highlightedGroupIndex++
+				} else if m.selectedGroupIndex == m.highlightedGroupIndex {
+					m.selectedGroupIndex++
+					m.moveLocation = top
 				} else {
-					if m.moveLocation == bottom && m.selectedGroupIndex != m.highlightedGroupIndex {
+					if m.moveLocation == bottom {
 						m.moveLocation = top
+						m.selectedGroupIndex++
 					} else {
 						m.moveLocation = bottom
-						m.selectedGroupIndex++
 					}
 				}
 			}
@@ -121,7 +127,16 @@ func (m Model) Width() int {
 
 func (m Model) buildContent() string {
 	var builder strings.Builder
-	for x, group := range m.artist.SongGroups {
+	groupModels := convertToModel(m.artist)
+	if m.isSelected && m.selectedGroupIndex != m.highlightedGroupIndex {
+		switch m.moveLocation {
+		case top:
+			groupModels.mergeOnTop(m.highlightedGroupIndex, m.selectedGroupIndex)
+		case bottom:
+			groupModels.mergeAtBottom(m.highlightedGroupIndex, m.selectedGroupIndex)
+		}
+	}
+	for x, group := range groupModels {
 		var localGroupBuilder strings.Builder
 		localStyle := lipgloss.NewStyle().Inline(true)
 		if m.isSelected && x == m.selectedGroupIndex {
@@ -129,10 +144,10 @@ func (m Model) buildContent() string {
 		} else if !m.isSelected && x == m.highlightedGroupIndex {
 			localStyle = localStyle.Inherit(highlightedText)
 		}
-		localGroupBuilder.WriteString(localStyle.Render(fmt.Sprintln("Group", x, "first index", group.First, "last index", group.Last)))
+		localGroupBuilder.WriteString(localStyle.Render(fmt.Sprintln("Group", x, "first index", group.first, "last index", group.last)))
 		localGroupBuilder.WriteString("\n")
-		for i, song := range group.SongTitles {
-			localGroupBuilder.WriteString(localStyle.Render(fmt.Sprintln(i+group.First, song)))
+		for _, song := range group.songs {
+			localGroupBuilder.WriteString(localStyle.Render(fmt.Sprintln(song.index, song.name)))
 			localGroupBuilder.WriteString("\n")
 		}
 		localGroupBuilder.WriteString("\n")
