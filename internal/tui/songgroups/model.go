@@ -7,7 +7,7 @@ import (
 type songGroups []songGroupModel
 
 type songGroupModel struct {
-	first, last int
+	index, first, last int
 	songs  []songModel
 }
 
@@ -18,12 +18,12 @@ type songModel struct {
 
 func convertToModel(artist sorter.Artist) songGroups {
 	result := make([]songGroupModel, 0)
-	for _, group := range artist.SongGroups {
+	for index, group := range artist.SongGroups {
 		groupResult := make([]songModel, 0)
 		for songIndex, song := range group.SongTitles {
 			groupResult = append(groupResult, songModel{songIndex + group.First, song})
 		}
-		result = append(result, songGroupModel{group.First, group.Last, groupResult})
+		result = append(result, songGroupModel{index, group.First, group.Last, groupResult})
 	}
 	return result
 }

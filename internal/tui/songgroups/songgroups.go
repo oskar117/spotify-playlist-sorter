@@ -125,6 +125,11 @@ func (m Model) Width() int {
 	return m.viewport.Width
 }
 
+func (m Model) Deselect() {
+	m.isSelected = false
+	m.SetContent(m.buildContent())
+}
+
 func (m Model) buildContent() string {
 	var builder strings.Builder
 	groupModels := convertToModel(m.artist)
@@ -139,9 +144,9 @@ func (m Model) buildContent() string {
 	for x, group := range groupModels {
 		var localGroupBuilder strings.Builder
 		localStyle := lipgloss.NewStyle().Inline(true)
-		if m.isSelected && x == m.selectedGroupIndex {
+		if m.isSelected && group.index == m.selectedGroupIndex {
 			localStyle = localStyle.Inherit(selectedText)
-		} else if !m.isSelected && x == m.highlightedGroupIndex {
+		} else if !m.isSelected && group.index == m.highlightedGroupIndex {
 			localStyle = localStyle.Inherit(highlightedText)
 		}
 		localGroupBuilder.WriteString(localStyle.Render(fmt.Sprintln("Group", x, "first index", group.first, "last index", group.last)))

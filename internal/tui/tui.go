@@ -73,6 +73,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.String() == "esc" {
 			m.selected = ""
+			m.songGroups.Deselect()
 			m.activeFocus = listFocus
 			if m.artistsList.FilterState() == list.Unfiltered {
 				return m, nil
