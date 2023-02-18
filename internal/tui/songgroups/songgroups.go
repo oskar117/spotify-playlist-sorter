@@ -55,7 +55,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.viewport.KeyMap.Up):
-			if m.highlightedGroupIndex > 0 {
+			if m.highlightedGroupIndex > 0 && m.selectedGroupIndex > 0 || m.selectedGroupIndex == 0 && m.moveLocation == bottom {
 				if !m.isSelected {
 					m.highlightedGroupIndex--
 				} else if m.selectedGroupIndex == m.highlightedGroupIndex {
@@ -71,7 +71,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				}
 			}
 		case key.Matches(msg, m.viewport.KeyMap.Down):
-			if m.highlightedGroupIndex < len(m.artist.SongGroups) - 1 {
+			if m.highlightedGroupIndex < len(m.artist.SongGroups)-1 && m.selectedGroupIndex < len(m.artist.SongGroups)-1 || m.selectedGroupIndex == len(m.artist.SongGroups)-1 && m.moveLocation == top {
 				if !m.isSelected {
 					m.highlightedGroupIndex++
 				} else if m.selectedGroupIndex == m.highlightedGroupIndex {
