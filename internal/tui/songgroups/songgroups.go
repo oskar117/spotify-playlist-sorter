@@ -125,7 +125,7 @@ func (m Model) Width() int {
 	return m.viewport.Width
 }
 
-func (m Model) Deselect() {
+func (m *Model) Deselect() {
 	m.isSelected = false
 	m.SetContent(m.buildContent())
 }
