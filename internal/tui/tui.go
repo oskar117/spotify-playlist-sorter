@@ -42,14 +42,15 @@ type model struct {
 	selected            string
 	activeFocus         activeFocus
 	songGroupsViewWidth int
+	artistListViewWidth int
 }
 
 func InitialModel(artistNames []list.Item, artists map[string]*sorter.Artist) model {
 	delegate := list.NewDefaultDelegate()
 	delegate.ShowDescription = false
-	delegate.SetSpacing(0)
 	list := list.New(artistNames, delegate, 0, 0)
 	list.Title = "Spotify Playlist Sorter"
+	list.SetShowHelp(false)
 	viewport := songgroups.New(0, 0)
 	return model{
 		artistsList: list,
@@ -84,7 +85,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		borderHeight := blurredBorderStyle.GetHorizontalFrameSize()
 		m.artistsList.SetSize(h/2, v-borderHeight)
 		m.songGroups.SetSize(h/2, v-borderHeight)
-		m.songGroupsViewWidth = h - lipgloss.Width(m.artistsList.View()) - 2*blurredBorderStyle.GetVerticalFrameSize()
+		m.artistListViewWidth = int(float64(h) * 0.25) - 2*blurredBorderStyle.GetVerticalFrameSize()
+		m.songGroupsViewWidth = h - m.artistListViewWidth - 2*blurredBorderStyle.GetVerticalFrameSize()
 		m.songGroups.ChangeArtist(*m.artists[m.artistsList.SelectedItem().FilterValue()])
 	}
 	switch m.activeFocus {
@@ -112,10 +114,10 @@ func (m model) View() string {
 	songGroupsView := m.songGroups.View()
 	switch m.activeFocus {
 	case listFocus:
-		artistsList = focusedBorderStyle.UnsetWidth().Render(artistsList)
+		artistsList = focusedBorderStyle.Width(m.artistListViewWidth).Render(artistsList)
 		songGroupsView = blurredBorderStyle.Width(m.songGroupsViewWidth).Render(songGroupsView)
 	case songGroupFocus:
-		artistsList = blurredBorderStyle.UnsetWidth().Render(artistsList)
+		artistsList = blurredBorderStyle.Width(m.artistListViewWidth).Render(artistsList)
 		songGroupsView = focusedBorderStyle.Width(m.songGroupsViewWidth).Render(songGroupsView)
 	}
 	return lipgloss.JoinHorizontal(lipgloss.Top, artistsList, songGroupsView)
