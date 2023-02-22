@@ -72,37 +72,39 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
-		if msg.String() == "esc" {
-			m.selected = ""
-			m.songGroups.Deselect()
-			m.activeFocus = listFocus
-			if m.artistsList.FilterState() == list.Unfiltered {
-				return m, nil
-			}
-		}
 	case tea.WindowSizeMsg:
 		h, v := msg.Width, msg.Height
 		borderHeight := blurredBorderStyle.GetHorizontalFrameSize()
 		m.artistsList.SetSize(h/2, v-borderHeight)
 		m.songGroups.SetSize(h/2, v-borderHeight)
-		m.artistListViewWidth = int(float64(h) * 0.25) - 2*blurredBorderStyle.GetVerticalFrameSize()
+		m.artistListViewWidth = int(float64(h)*0.25) - 2*blurredBorderStyle.GetVerticalFrameSize()
 		m.songGroupsViewWidth = h - m.artistListViewWidth - 2*blurredBorderStyle.GetVerticalFrameSize()
 		m.songGroups.ChangeArtist(*m.artists[m.artistsList.SelectedItem().FilterValue()])
 	}
 	switch m.activeFocus {
 	case listFocus:
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			if msg.String() == "enter" {
-				m.selected = m.artistsList.SelectedItem().FilterValue()
-				m.activeFocus = songGroupFocus
+		if m.artistsList.FilterState() != list.Filtering {
+			switch msg := msg.(type) {
+			case tea.KeyMsg:
+				if msg.String() == "enter" {
+					m.selected = m.artistsList.SelectedItem().FilterValue()
+					m.activeFocus = songGroupFocus
+				}
 			}
 		}
 		m.artistsList, cmd = m.artistsList.Update(msg)
-
 		cmds = append(cmds, cmd)
 		m.songGroups.ChangeArtist(*m.artists[m.artistsList.SelectedItem().FilterValue()])
 	case songGroupFocus:
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			if msg.String() == "esc" {
+				m.selected = ""
+				m.songGroups.Deselect()
+				m.activeFocus = listFocus
+				return m, nil
+			}
+		}
 		m.songGroups, cmd = m.songGroups.Update(msg)
 	}
 	cmds = append(cmds, cmd)
