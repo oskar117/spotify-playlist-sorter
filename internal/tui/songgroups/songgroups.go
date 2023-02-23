@@ -57,12 +57,18 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case key.Matches(msg, m.viewport.KeyMap.Up):
 			if !m.isSelected && m.highlightedGroupIndex > 0 {
 				m.highlightedGroupIndex--
+				group := len(m.artist.SongGroups[m.highlightedGroupIndex].SongTitles) - 1
+				m.viewport.LineUp(group)
 			} else if m.selectedGroupIndex == m.highlightedGroupIndex && m.selectedGroupIndex > 0 {
 				m.selectedGroupIndex--
 				m.moveLocation = bottom
+				group := len(m.artist.SongGroups[m.selectedGroupIndex].SongTitles) - 1
+				m.viewport.LineUp(group)
 			} else if m.selectedGroupIndex > 0 || m.moveLocation == bottom {
 				if m.moveLocation == bottom {
 					m.moveLocation = top
+					group := len(m.artist.SongGroups[m.selectedGroupIndex].SongTitles) - 1
+					m.viewport.LineUp(group)
 				} else {
 					m.moveLocation = bottom
 					m.selectedGroupIndex--
@@ -71,8 +77,12 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case key.Matches(msg, m.viewport.KeyMap.Down):
 			if m.highlightedGroupIndex < len(m.artist.SongGroups)-1 && m.selectedGroupIndex < len(m.artist.SongGroups)-1 || m.selectedGroupIndex == len(m.artist.SongGroups)-1 && m.moveLocation == top {
 				if !m.isSelected {
+					group := len(m.artist.SongGroups[m.highlightedGroupIndex].SongTitles) - 1
+					m.viewport.LineDown(group)
 					m.highlightedGroupIndex++
 				} else if m.selectedGroupIndex == m.highlightedGroupIndex {
+					group := len(m.artist.SongGroups[m.selectedGroupIndex].SongTitles) - 1
+					m.viewport.LineDown(group)
 					m.selectedGroupIndex++
 					m.moveLocation = top
 				} else {
@@ -81,6 +91,8 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 						m.selectedGroupIndex++
 					} else {
 						m.moveLocation = bottom
+						group := len(m.artist.SongGroups[m.selectedGroupIndex].SongTitles) - 1
+						m.viewport.LineDown(group)
 					}
 				}
 			}
@@ -93,7 +105,6 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			}
 		}
 	}
-
 	m.SetContent(m.buildContent())
 	m.viewport, cmd = m.viewport.Update(msg)
 	return m, cmd
