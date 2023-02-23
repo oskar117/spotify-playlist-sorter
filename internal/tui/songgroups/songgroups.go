@@ -55,19 +55,17 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.viewport.KeyMap.Up):
-			if m.highlightedGroupIndex > 0 && m.selectedGroupIndex > 0 || m.selectedGroupIndex == 0 && m.moveLocation == bottom {
-				if !m.isSelected {
-					m.highlightedGroupIndex--
-				} else if m.selectedGroupIndex == m.highlightedGroupIndex {
-					m.selectedGroupIndex--
-					m.moveLocation = bottom
+			if !m.isSelected && m.highlightedGroupIndex > 0 {
+				m.highlightedGroupIndex--
+			} else if m.selectedGroupIndex == m.highlightedGroupIndex && m.selectedGroupIndex > 0 {
+				m.selectedGroupIndex--
+				m.moveLocation = bottom
+			} else if m.selectedGroupIndex > 0 || m.moveLocation == bottom {
+				if m.moveLocation == bottom {
+					m.moveLocation = top
 				} else {
-					if m.moveLocation == bottom {
-						m.moveLocation = top
-					} else {
-						m.moveLocation = bottom
-						m.selectedGroupIndex--
-					}
+					m.moveLocation = bottom
+					m.selectedGroupIndex--
 				}
 			}
 		case key.Matches(msg, m.viewport.KeyMap.Down):
@@ -127,6 +125,7 @@ func (m Model) Width() int {
 
 func (m *Model) Deselect() {
 	m.isSelected = false
+	m.selectedGroupIndex = 0
 	m.SetContent(m.buildContent())
 }
 
