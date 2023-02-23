@@ -159,15 +159,3 @@ func (m Model) buildContent() string {
 	}
 	return builder.String()
 }
-
-func buildViewport(choosen sorter.Artist) string {
-	var builder strings.Builder
-	for x, group := range choosen.SongGroups {
-		builder.WriteString(fmt.Sprintln("Group", x, "first index", group.First, "last index", group.Last))
-		for i, song := range group.SongTitles {
-			builder.WriteString(fmt.Sprintln(i+group.First, song))
-		}
-		builder.WriteString("\n")
-	}
-	return builder.String()
-}
