@@ -3,6 +3,7 @@ package tui
 import (
 	"github.com/oskar117/spotify-playlist-sorter/internal/sorter"
 	"github.com/oskar117/spotify-playlist-sorter/internal/tui/songgroups"
+	"github.com/zmb3/spotify/v2"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -45,13 +46,13 @@ type model struct {
 	artistListViewWidth int
 }
 
-func InitialModel(artistNames []list.Item, artists map[string]*sorter.Artist) model {
+func InitialModel(artistNames []list.Item, artists map[string]*sorter.Artist, playlistId spotify.ID, client *spotify.Client) model {
 	delegate := list.NewDefaultDelegate()
 	delegate.ShowDescription = false
 	list := list.New(artistNames, delegate, 0, 0)
 	list.Title = "Spotify Playlist Sorter"
 	list.SetShowHelp(false)
-	viewport := songgroups.New(0, 0)
+	viewport := songgroups.New(0, 0, playlistId, client)
 	return model{
 		artistsList: list,
 		songGroups:  viewport,

@@ -31,9 +31,8 @@ func convertToModel(artist sorter.Artist) songGroups {
 func (group *songGroups) mergeOnTop(from, to int) {
 	sourceGroup := (*group)[from]
 	targetGroup := &(*group)[to]
-	for i, song := range sourceGroup.songs {
-		targetGroup.songs = append([]songModel{{targetGroup.first - len(sourceGroup.songs) + i, song.name}}, targetGroup.songs...)
-	}
+	targetGroup.songs = append(sourceGroup.songs, targetGroup.songs...)
+	targetGroup.last += len(sourceGroup.songs)
 	*group = append((*group)[:from], (*group)[from+1:]...)
 }
 
@@ -43,5 +42,6 @@ func (group *songGroups) mergeAtBottom(from, to int) {
 	for i, song := range sourceGroup.songs {
 		targetGroup.songs = append(targetGroup.songs, songModel{targetGroup.last + i + 1, song.name})
 	}
+	targetGroup.last += len(sourceGroup.songs)
 	*group = append((*group)[:from], (*group)[from+1:]...)
 }

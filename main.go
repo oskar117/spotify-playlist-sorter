@@ -15,8 +15,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/oskar117/spotify-playlist-sorter/internal/tui"
 	"github.com/oskar117/spotify-playlist-sorter/internal/sorter"
+	"github.com/oskar117/spotify-playlist-sorter/internal/tui"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -90,8 +90,11 @@ func main() {
 
 	artistNames := make([]list.Item, 0)
 	artists := make(map[string]*sorter.Artist)
+	var playlistId spotify.ID
+
 	for _, playlist := range playlistPage.Playlists {
 		if playlist.Owner.ID == spotifyUser.ID && playlist.Name == "asdf" {
+			playlistId = playlist.ID
 			firstItemsPage, _ := client.GetPlaylistItems(context.Background(), playlist.ID)
 			items := firstItemsPage.Items
 			for firstItemsPage.Next != "" {
@@ -124,11 +127,17 @@ func main() {
 			// }
 		}
 	}
-	p := tea.NewProgram(tui.InitialModel(artistNames, artists), tea.WithAltScreen())
-    if _, err := p.Run(); err != nil {
-        fmt.Printf("Alas, there's been an error: %v", err)
-        os.Exit(1)
-    }
+	f, err := tea.LogToFile("debug.log", "debug")
+	if err != nil {
+		fmt.Println("fatal:", err)
+		os.Exit(1)
+	}
+	defer f.Close()
+	p := tea.NewProgram(tui.InitialModel(artistNames, artists, playlistId, client), tea.WithAltScreen())
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("Alas, there's been an error: %v", err)
+		os.Exit(1)
+	}
 	os.Exit(6)
 
 }
