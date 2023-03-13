@@ -5,6 +5,12 @@ type SongGroup struct {
 	SongTitles  []string
 }
 
+type ViewArtist interface {
+	FilterValue() string
+	Description() string
+	Title() string      
+}
+
 type Artist struct {
 	Name       string
 	SongGroups []*SongGroup
@@ -20,6 +26,18 @@ func (artist *Artist) AddSong(title string, index int) {
 		}
 	}
 	artist.SongGroups = append(artist.SongGroups, &SongGroup{index, index, []string{title}})
+}
+
+func (artist Artist) Title() string {
+	return artist.Name
+}
+
+func (artist Artist) Description() string {
+	return ""
+}
+
+func (artist Artist) FilterValue() string {
+	return artist.Name
 }
 
 func (group *SongGroup) instertAtEnd(songGroup SongGroup) {

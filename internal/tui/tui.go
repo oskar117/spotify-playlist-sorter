@@ -39,17 +39,25 @@ func (i ViewArtist) Title() string       { return i.Name }
 type model struct {
 	artistsList         list.Model
 	songGroups          songgroups.Model
-	artists             map[string]*sorter.Artist
+	artists             []*sorter.Artist
 	selected            string
 	activeFocus         activeFocus
 	songGroupsViewWidth int
 	artistListViewWidth int
 }
 
-func InitialModel(artistNames []list.Item, artists map[string]*sorter.Artist, playlistId spotify.ID, client *spotify.Client) model {
+func convertArtistsToListEntry(artists []*sorter.Artist) []list.Item {
+	listItems := make([]list.Item, len(artists))
+	for i, v := range artists {
+		listItems[i] = list.Item(*v)
+	}
+	return listItems
+}
+
+func InitialModel(artists []*sorter.Artist, playlistId spotify.ID, client *spotify.Client) model {
 	delegate := list.NewDefaultDelegate()
 	delegate.ShowDescription = false
-	list := list.New(artistNames, delegate, 0, 0)
+	list := list.New(convertArtistsToListEntry(artists), delegate, 0, 0)
 	list.Title = "Spotify Playlist Sorter"
 	list.SetShowHelp(false)
 	viewport := songgroups.New(0, 0, playlistId, client)
@@ -80,7 +88,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.songGroups.SetSize(h/2, v-borderHeight)
 		m.artistListViewWidth = int(float64(h)*0.25) - 2*blurredBorderStyle.GetVerticalFrameSize()
 		m.songGroupsViewWidth = h - m.artistListViewWidth - 2*blurredBorderStyle.GetVerticalFrameSize()
-		m.songGroups.ChangeArtist(*m.artists[m.artistsList.SelectedItem().FilterValue()])
+		if it := m.artistsList.SelectedItem(); it != nil {
+			m.songGroups.ChangeArtist(it.(sorter.Artist))
+		}
 	}
 	switch m.activeFocus {
 	case listFocus:
@@ -95,7 +105,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.artistsList, cmd = m.artistsList.Update(msg)
 		cmds = append(cmds, cmd)
-		m.songGroups.ChangeArtist(*m.artists[m.artistsList.SelectedItem().FilterValue()])
+		if it := m.artistsList.SelectedItem(); it != nil {
+			m.songGroups.ChangeArtist(it.(sorter.Artist))
+		}
 	case songGroupFocus:
 		switch msg := msg.(type) {
 		case tea.KeyMsg:

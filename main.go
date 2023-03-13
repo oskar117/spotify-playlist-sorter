@@ -16,9 +16,9 @@ import (
 	"time"
 
 	"github.com/oskar117/spotify-playlist-sorter/internal/sorter"
+	loc_spotify "github.com/oskar117/spotify-playlist-sorter/internal/spotify"
 	"github.com/oskar117/spotify-playlist-sorter/internal/tui"
 
-	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	cv "github.com/nirasan/go-oauth-pkce-code-verifier"
 	"github.com/zalando/go-keyring"
@@ -88,43 +88,13 @@ func main() {
 	fmt.Println("You are logged in as:", spotifyUser.ID)
 	playlistPage, _ := client.GetPlaylistsForUser(context.Background(), spotifyUser.ID)
 
-	artistNames := make([]list.Item, 0)
-	artists := make(map[string]*sorter.Artist)
 	var playlistId spotify.ID
+	var artists []*sorter.Artist
 
 	for _, playlist := range playlistPage.Playlists {
 		if playlist.Owner.ID == spotifyUser.ID && playlist.Name == "asdf" {
 			playlistId = playlist.ID
-			firstItemsPage, _ := client.GetPlaylistItems(context.Background(), playlist.ID)
-			items := firstItemsPage.Items
-			for firstItemsPage.Next != "" {
-				client.NextPage(context.Background(), firstItemsPage)
-				items = append(items, firstItemsPage.Items...)
-			}
-			for index, item := range items {
-				artistName := item.Track.Track.Artists[0].Name
-				artist, ok := artists[artistName]
-				if !ok {
-					artist = &sorter.Artist{Name: artistName, SongGroups: make([]*sorter.SongGroup, 0)}
-					artistNames = append(artistNames, tui.ViewArtist{Name: artist.Name})
-					artists[artistName] = artist
-				}
-				artist.AddSong(item.Track.Track.Name, index)
-			}
-			// choosenArtist := artists[os.Args[1]]
-			// for x, group := range choosenArtist.songGroups {
-			// 	fmt.Println("Group", x, "first index", group.first, "last index", group.last)
-			// 	for i, song := range group.songTitles {
-			// 		fmt.Println(i+group.first, song)
-			// 	}
-			// }
-
-			// snapshotId, error := client.ReorderPlaylistTracks(context.Background(), playlist.ID, spotify.PlaylistReorderOptions{RangeStart: 3035, RangeLength: 1, InsertBefore: 3030})
-			// if error != nil {
-			// 	fmt.Println(error.Error())
-			// } else {
-			// 	fmt.Println("\nMoved 3035 to 3030, snapId: ", snapshotId)
-			// }
+			artists = loc_spotify.FetchArtists(client, playlistId)
 		}
 	}
 	f, err := tea.LogToFile("debug.log", "debug")
@@ -133,7 +103,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer f.Close()
-	p := tea.NewProgram(tui.InitialModel(artistNames, artists, playlistId, client), tea.WithAltScreen())
+	p := tea.NewProgram(tui.InitialModel(artists, playlistId, client), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
