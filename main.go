@@ -15,9 +15,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/oskar117/spotify-playlist-sorter/internal/sorter"
+	"github.com/oskar117/spotify-playlist-sorter/internal/tui/sorter"
+	"github.com/oskar117/spotify-playlist-sorter/internal/sorter_model"
 	loc_spotify "github.com/oskar117/spotify-playlist-sorter/internal/spotify"
-	"github.com/oskar117/spotify-playlist-sorter/internal/tui"
 
 	tea "github.com/charmbracelet/bubbletea"
 	cv "github.com/nirasan/go-oauth-pkce-code-verifier"
@@ -89,7 +89,7 @@ func main() {
 	playlistPage, _ := client.GetPlaylistsForUser(context.Background(), spotifyUser.ID)
 
 	var playlistId spotify.ID
-	var artists []*sorter.Artist
+	var artists []*sorter_model.Artist
 
 	for _, playlist := range playlistPage.Playlists {
 		if playlist.Owner.ID == spotifyUser.ID && playlist.Name == "asdf" {
@@ -103,7 +103,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer f.Close()
-	p := tea.NewProgram(tui.InitialModel(artists, playlistId, client), tea.WithAltScreen())
+	p := tea.NewProgram(sorter.InitialModel(artists, playlistId, client), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)

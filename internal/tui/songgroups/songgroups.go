@@ -8,7 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/oskar117/spotify-playlist-sorter/internal/sorter"
+	"github.com/oskar117/spotify-playlist-sorter/internal/sorter_model"
 	"github.com/oskar117/spotify-playlist-sorter/internal/spotify"
 	spotify_api "github.com/zmb3/spotify/v2"
 )
@@ -26,7 +26,7 @@ var (
 
 type Model struct {
 	viewport              viewport.Model
-	artist                sorter.Artist
+	artist                sorter_model.Artist
 	highlightedGroupIndex int
 	selectedGroupIndex    int
 	isSelected            bool
@@ -121,7 +121,7 @@ func (m *Model) SetSize(width, height int) {
 	m.viewport.Height = height
 }
 
-func (m *Model) ChangeArtist(artist sorter.Artist) {
+func (m *Model) ChangeArtist(artist sorter_model.Artist) {
 	m.artist = artist
 	m.highlightedGroupIndex = 0
 	m.viewport.GotoTop()

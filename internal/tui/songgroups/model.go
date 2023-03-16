@@ -1,7 +1,7 @@
 package songgroups
 
 import (
-	"github.com/oskar117/spotify-playlist-sorter/internal/sorter"
+	"github.com/oskar117/spotify-playlist-sorter/internal/sorter_model"
 )
 
 type songGroups []songGroupModel
@@ -16,7 +16,7 @@ type songModel struct {
 	name  string
 }
 
-func convertToModel(artist sorter.Artist) songGroups {
+func convertToModel(artist sorter_model.Artist) songGroups {
 	result := make([]songGroupModel, 0)
 	for index, group := range artist.SongGroups {
 		groupResult := make([]songModel, 0)

@@ -1,4 +1,4 @@
-package sorter
+package sorter_model
 
 type SongGroup struct {
 	First, Last int
