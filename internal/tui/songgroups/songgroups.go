@@ -10,7 +10,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/oskar117/spotify-playlist-sorter/internal/sorter_model"
 	"github.com/oskar117/spotify-playlist-sorter/internal/spotify"
-	spotify_api "github.com/zmb3/spotify/v2"
 )
 
 var (
@@ -31,14 +30,12 @@ type Model struct {
 	selectedGroupIndex    int
 	isSelected            bool
 	moveLocation          spotify.GroupLocation
-	playlistId			  spotify_api.ID
-	client				  *spotify_api.Client
+	client				  *spotify.SpotifyClient
 }
 
-func New(width, height int, playlistId spotify_api.ID, client *spotify_api.Client) Model {
+func New(width, height int, client *spotify.SpotifyClient) Model {
 	return Model{
 		viewport: viewport.New(width, height),
-		playlistId: playlistId,
 		client: client,
 	}
 }

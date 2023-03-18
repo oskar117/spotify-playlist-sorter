@@ -2,8 +2,8 @@ package sorter
 
 import (
 	"github.com/oskar117/spotify-playlist-sorter/internal/sorter_model"
+	"github.com/oskar117/spotify-playlist-sorter/internal/spotify"
 	"github.com/oskar117/spotify-playlist-sorter/internal/tui/songgroups"
-	"github.com/zmb3/spotify/v2"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -36,7 +36,7 @@ func (i ViewArtist) FilterValue() string { return i.Name }
 func (i ViewArtist) Description() string { return i.Desc }
 func (i ViewArtist) Title() string       { return i.Name }
 
-type model struct {
+type Model struct {
 	artistsList         list.Model
 	songGroups          songgroups.Model
 	artists             []*sorter_model.Artist
@@ -54,14 +54,14 @@ func convertArtistsToListEntry(artists []*sorter_model.Artist) []list.Item {
 	return listItems
 }
 
-func InitialModel(artists []*sorter_model.Artist, playlistId spotify.ID, client *spotify.Client) model {
+func InitialModel(artists []*sorter_model.Artist, client *spotify.SpotifyClient) Model {
 	delegate := list.NewDefaultDelegate()
 	delegate.ShowDescription = false
 	list := list.New(convertArtistsToListEntry(artists), delegate, 0, 0)
 	list.Title = "Spotify Playlist Sorter"
 	list.SetShowHelp(false)
-	viewport := songgroups.New(0, 0, playlistId, client)
-	return model{
+	viewport := songgroups.New(0, 0, client)
+	return Model{
 		artistsList: list,
 		songGroups:  viewport,
 		artists:     artists,
@@ -69,11 +69,11 @@ func InitialModel(artists []*sorter_model.Artist, playlistId spotify.ID, client 
 	}
 }
 
-func (m model) Init() tea.Cmd {
+func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
@@ -124,7 +124,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m model) View() string {
+func (m Model) View() string {
 	artistsList := m.artistsList.View()
 	songGroupsView := m.songGroups.View()
 	switch m.activeFocus {
