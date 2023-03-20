@@ -17,38 +17,84 @@ const (
 )
 
 type model struct {
+	client *spotify.SpotifyClient
+
 	activeView activeView
 
-	playlistList list.Model
-	sorterView   sorter.Model
+	playlistList     list.Model
+	selectedPlaylist sorter_model.Playlist
+
+	sorterView sorter.Model
+}
+
+func convertPlaylistsToListEntry(playlists []*sorter_model.Playlist) []list.Item {
+	listItems := make([]list.Item, len(playlists))
+	for i, v := range playlists {
+		listItems[i] = list.Item(*v)
+	}
+	return listItems
 }
 
 func New() *model {
 	client := spotify.New()
-	playlistPage := client.GetPlaylistsFirstPage()
+	playlists := client.GetPlaylistsFirstPage()
 
-	var artists []*sorter_model.Artist
+	delegate := list.NewDefaultDelegate()
+	list := list.New(convertPlaylistsToListEntry(playlists), delegate, 0, 0)
+	list.Title = "Select playlist"
+	list.SetShowHelp(false)
 
-	for _, playlist := range playlistPage.Playlists {
-		if playlist.Name == "asdf" {
-			client.SetSelectedPlaylist(playlist.ID)
-			artists = client.FetchArtists()
-		}
-	}
 	return &model{
-		activeView: sorterView,
-		sorterView: sorter.InitialModel(artists, client),
+		playlistList: list,
+		activeView:   playlistView,
+		sorterView:   sorter.InitialModel(client),
+		client:       client,
 	}
 }
 
 func (m model) Init() tea.Cmd {
-	return m.sorterView.Init()
+	return nil
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	return m.sorterView.Update(msg)
+	var cmd tea.Cmd
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		h, v := msg.Width, msg.Height
+		m.playlistList.SetSize(h, v)
+		m.sorterView, cmd = m.sorterView.Update(msg)
+		return m, cmd
+	}
+	switch m.activeView {
+	case sorterView:
+		m.sorterView, cmd = m.sorterView.Update(msg)
+	case playlistView:
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			if msg.String() == "enter" {
+				m.selectedPlaylist = m.playlistList.SelectedItem().(sorter_model.Playlist)
+				m.client.SetSelectedPlaylist(m.selectedPlaylist.ID)
+				m.activeView = sorterView
+				cmd = m.sorterView.FetchArtists()
+				return m, cmd
+			}
+		}
+		m.playlistList, cmd = m.playlistList.Update(msg)
+	default:
+		panic("Unknown view value!")
+	}
+	return m, cmd
 }
 
 func (m model) View() string {
-	return m.sorterView.View()
+	switch m.activeView {
+	case loadingView:
+		return "todo"
+	case sorterView:
+		return m.sorterView.View()
+	case playlistView:
+		return m.playlistList.View()
+	default:
+		panic("Unknown view value!")
+	}
 }

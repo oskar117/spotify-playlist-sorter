@@ -44,6 +44,7 @@ type Model struct {
 	activeFocus         activeFocus
 	songGroupsViewWidth int
 	artistListViewWidth int
+	client				*spotify.SpotifyClient
 }
 
 func convertArtistsToListEntry(artists []*sorter_model.Artist) []list.Item {
@@ -54,18 +55,18 @@ func convertArtistsToListEntry(artists []*sorter_model.Artist) []list.Item {
 	return listItems
 }
 
-func InitialModel(artists []*sorter_model.Artist, client *spotify.SpotifyClient) Model {
+func InitialModel(client *spotify.SpotifyClient) Model {
 	delegate := list.NewDefaultDelegate()
 	delegate.ShowDescription = false
-	list := list.New(convertArtistsToListEntry(artists), delegate, 0, 0)
+	list := list.New(nil, delegate, 0, 0)
 	list.Title = "Spotify Playlist Sorter"
 	list.SetShowHelp(false)
 	viewport := songgroups.New(0, 0, client)
 	return Model{
 		artistsList: list,
 		songGroups:  viewport,
-		artists:     artists,
 		activeFocus: listFocus,
+		client:		 client,
 	}
 }
 
@@ -73,7 +74,7 @@ func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
@@ -91,6 +92,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if it := m.artistsList.SelectedItem(); it != nil {
 			m.songGroups.ChangeArtist(it.(sorter_model.Artist))
 		}
+	case artistsMsg:
+		m.artists  = msg.artists
+		m.artistsList.SetItems(convertArtistsToListEntry(m.artists))
 	}
 	switch m.activeFocus {
 	case listFocus:
@@ -136,4 +140,15 @@ func (m Model) View() string {
 		songGroupsView = focusedBorderStyle.Width(m.songGroupsViewWidth).Render(songGroupsView)
 	}
 	return lipgloss.JoinHorizontal(lipgloss.Top, artistsList, songGroupsView)
+}
+
+type artistsMsg struct {
+	artists []*sorter_model.Artist
+}
+
+func (m Model) FetchArtists() tea.Cmd {
+	return func() tea.Msg {
+		artists := m.client.FetchArtists()
+		return artistsMsg{artists}
+	}
 }

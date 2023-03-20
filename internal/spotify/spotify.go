@@ -38,9 +38,20 @@ func (client *SpotifyClient) SetSelectedPlaylist(playlistId spotify.ID) {
 	client.playlistId = playlistId
 }
 
-func (client *SpotifyClient) GetPlaylistsFirstPage() *spotify.SimplePlaylistPage {
+func (client *SpotifyClient) GetPlaylistsFirstPage() []*sorter_model.Playlist {
 	playlistPage, _ := client.spotifyApi.GetPlaylistsForUser(context.Background(), client.userId)
-	return playlistPage
+	playlists := make([]*sorter_model.Playlist, 0)
+	for _, playlist := range playlistPage.Playlists {
+		if playlist.Owner.ID != client.userId {
+			continue
+		}
+		playlists = append(playlists, &sorter_model.Playlist{
+			Name: playlist.Name, 
+			Desc: playlist.Description, 
+			ID: playlist.ID,
+		})
+	}
+	return playlists
 }
 
 func (client *SpotifyClient) ReorderGroups(from, to *sorter_model.SongGroup, location GroupLocation) error {
