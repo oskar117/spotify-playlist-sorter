@@ -1,16 +1,5 @@
 package sorter_model
 
-type SongGroup struct {
-	First, Last int
-	SongTitles  []string
-}
-
-type ViewArtist interface {
-	FilterValue() string
-	Description() string
-	Title() string      
-}
-
 type Artist struct {
 	Name       string
 	SongGroups []*SongGroup
@@ -38,12 +27,4 @@ func (artist Artist) Description() string {
 
 func (artist Artist) FilterValue() string {
 	return artist.Name
-}
-
-func (group *SongGroup) instertAtEnd(songGroup SongGroup) {
-	group.SongTitles = append(group.SongTitles, songGroup.SongTitles...)
-}
-
-func (group *SongGroup) instertAtBeginning(songGroup SongGroup) {
-	group.SongTitles = append(songGroup.SongTitles, group.SongTitles...)
 }
