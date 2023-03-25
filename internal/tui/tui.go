@@ -88,6 +88,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.spinner.Tick
 	case command.StopLoadingMsg:
 		m.loading = false
+	case command.GoBackMessage:
+		m.activeView = playlistView
 	}
 	switch m.activeView {
 	case sorterView:

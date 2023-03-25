@@ -111,6 +111,8 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				if msg.String() == "enter" {
 					m.selected = m.artistsList.SelectedItem().FilterValue()
 					m.activeFocus = songGroupFocus
+				} else if msg.String() == "esc" {
+					return m, command.GoBackToPlaylistSelection()
 				}
 			}
 		}

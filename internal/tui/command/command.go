@@ -27,3 +27,11 @@ func UpdateSongGroups() tea.Cmd {
 		return SongGroupsUpdateMsg{}
 	}
 }
+
+type GoBackMessage struct {}
+
+func GoBackToPlaylistSelection() tea.Cmd {
+	return func() tea.Msg {
+		return GoBackMessage{}
+	}
+}
