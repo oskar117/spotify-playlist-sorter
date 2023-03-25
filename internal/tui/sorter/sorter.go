@@ -1,8 +1,11 @@
 package sorter
 
 import (
+	"log"
+
 	"github.com/oskar117/spotify-playlist-sorter/internal/sorter_model"
 	"github.com/oskar117/spotify-playlist-sorter/internal/spotify"
+	"github.com/oskar117/spotify-playlist-sorter/internal/tui/command"
 	"github.com/oskar117/spotify-playlist-sorter/internal/tui/songgroups"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -44,7 +47,7 @@ type Model struct {
 	activeFocus         activeFocus
 	songGroupsViewWidth int
 	artistListViewWidth int
-	client				*spotify.SpotifyClient
+	client              *spotify.SpotifyClient
 }
 
 func convertArtistsToListEntry(artists []*sorter_model.Artist) []list.Item {
@@ -66,7 +69,7 @@ func InitialModel(client *spotify.SpotifyClient) Model {
 		artistsList: list,
 		songGroups:  viewport,
 		activeFocus: listFocus,
-		client:		 client,
+		client:      client,
 	}
 }
 
@@ -93,8 +96,10 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			m.songGroups.ChangeArtist(it.(sorter_model.Artist))
 		}
 	case artistsMsg:
-		m.artists  = msg.artists
+		m.artists = msg.artists
 		m.artistsList.SetItems(convertArtistsToListEntry(m.artists))
+		log.Printf("ARTISSTS")
+		return m, command.StopLoading()
 	}
 	switch m.activeFocus {
 	case listFocus:
@@ -147,8 +152,8 @@ type artistsMsg struct {
 }
 
 func (m Model) FetchArtists() tea.Cmd {
-	return func() tea.Msg {
+	return tea.Batch(command.StartLoading("Fetching artists..."), func() tea.Msg {
 		artists := m.client.FetchArtists()
 		return artistsMsg{artists}
-	}
+	})
 }
