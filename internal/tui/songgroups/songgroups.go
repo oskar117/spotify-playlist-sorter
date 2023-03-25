@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/oskar117/spotify-playlist-sorter/internal/sorter_model"
 	"github.com/oskar117/spotify-playlist-sorter/internal/spotify"
+	"github.com/oskar117/spotify-playlist-sorter/internal/tui/command"
 )
 
 var (
@@ -93,7 +94,8 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case key.Matches(msg, key.NewBinding(key.WithKeys("enter"))):
 			if m.isSelected {
 				m.isSelected = false
-				// spotify.ReorderGroups(m.client, m.playlistId, m.artist.SongGroups[m.highlightedGroupIndex], m.artist.SongGroups[m.selectedGroupIndex], m.moveLocation)
+				m.client.ReorderGroups(m.artist.SongGroups[m.highlightedGroupIndex], m.artist.SongGroups[m.selectedGroupIndex], m.moveLocation)
+				return m, command.UpdateSongGroups()
 			} else {
 				m.isSelected = true
 				m.selectedGroupIndex = m.highlightedGroupIndex

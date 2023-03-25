@@ -20,3 +20,10 @@ func StopLoading() tea.Cmd {
 	}
 }
 
+type SongGroupsUpdateMsg struct {}
+
+func UpdateSongGroups() tea.Cmd {
+	return func() tea.Msg {
+		return SongGroupsUpdateMsg{}
+	}
+}

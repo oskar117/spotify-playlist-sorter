@@ -59,9 +59,9 @@ func (client *SpotifyClient) ReorderGroups(from, to *sorter_model.SongGroup, loc
 		if location == Top {
 			return to.First
 		}
-		return to.Last
+		return to.Last + 1
 	}()
-	options := spotify.PlaylistReorderOptions{RangeStart: from.First, RangeLength: len(from.SongTitles), InsertBefore: targetIndex + 1}
+	options := spotify.PlaylistReorderOptions{RangeStart: from.First, RangeLength: len(from.SongTitles), InsertBefore: targetIndex}
 	_, error := client.spotifyApi.ReorderPlaylistTracks(context.Background(), client.playlistId, options)
 	return error
 }

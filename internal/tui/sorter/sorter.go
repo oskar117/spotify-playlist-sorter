@@ -1,8 +1,6 @@
 package sorter
 
 import (
-	"log"
-
 	"github.com/oskar117/spotify-playlist-sorter/internal/sorter_model"
 	"github.com/oskar117/spotify-playlist-sorter/internal/spotify"
 	"github.com/oskar117/spotify-playlist-sorter/internal/tui/command"
@@ -98,8 +96,12 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case artistsMsg:
 		m.artists = msg.artists
 		m.artistsList.SetItems(convertArtistsToListEntry(m.artists))
-		log.Printf("ARTISSTS")
+		if it := m.artistsList.SelectedItem(); it != nil {
+			m.songGroups.ChangeArtist(it.(sorter_model.Artist))
+		}
 		return m, command.StopLoading()
+	case command.SongGroupsUpdateMsg:
+		return m, m.FetchArtists()
 	}
 	switch m.activeFocus {
 	case listFocus:
