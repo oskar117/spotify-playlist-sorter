@@ -131,9 +131,12 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			if msg.String() == "esc" {
-				m.selected = ""
-				m.songGroups.Deselect()
-				m.activeFocus = listFocus
+				if m.songGroups.IsGroupSelected {
+					m.selected = ""
+					m.songGroups.Deselect()
+				} else {
+					m.activeFocus = listFocus
+				}
 				return m, nil
 			}
 		}

@@ -29,15 +29,15 @@ type Model struct {
 	artist                sorter_model.Artist
 	highlightedGroupIndex int
 	selectedGroupIndex    int
-	isSelected            bool
+	IsGroupSelected       bool
 	moveLocation          spotify.GroupLocation
-	client				  *spotify.SpotifyClient
+	client                *spotify.SpotifyClient
 }
 
 func New(width, height int, client *spotify.SpotifyClient) Model {
 	return Model{
 		viewport: viewport.New(width, height),
-		client: client,
+		client:   client,
 	}
 }
 
@@ -52,7 +52,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.viewport.KeyMap.Up):
-			if !m.isSelected && m.highlightedGroupIndex > 0 {
+			if !m.IsGroupSelected && m.highlightedGroupIndex > 0 {
 				m.highlightedGroupIndex--
 				group := len(m.artist.SongGroups[m.highlightedGroupIndex].SongTitles) - 1
 				m.viewport.LineUp(group)
@@ -72,11 +72,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				}
 			}
 		case key.Matches(msg, m.viewport.KeyMap.Down):
-			if !m.isSelected && m.highlightedGroupIndex < len(m.artist.SongGroups)-1 {
+			if !m.IsGroupSelected && m.highlightedGroupIndex < len(m.artist.SongGroups)-1 {
 				group := len(m.artist.SongGroups[m.highlightedGroupIndex].SongTitles) - 1
 				m.viewport.LineDown(group)
 				m.highlightedGroupIndex++
-			} else if m.selectedGroupIndex == m.highlightedGroupIndex  && m.selectedGroupIndex < len(m.artist.SongGroups)-1 {
+			} else if m.selectedGroupIndex == m.highlightedGroupIndex && m.selectedGroupIndex < len(m.artist.SongGroups)-1 {
 				group := len(m.artist.SongGroups[m.selectedGroupIndex].SongTitles) - 1
 				m.viewport.LineDown(group)
 				m.selectedGroupIndex++
@@ -92,12 +92,12 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				}
 			}
 		case key.Matches(msg, key.NewBinding(key.WithKeys("enter"))):
-			if m.isSelected {
-				m.isSelected = false
+			if m.IsGroupSelected {
+				m.IsGroupSelected = false
 				m.client.ReorderGroups(m.artist.SongGroups[m.highlightedGroupIndex], m.artist.SongGroups[m.selectedGroupIndex], m.moveLocation)
 				return m, command.UpdateSongGroups()
 			} else {
-				m.isSelected = true
+				m.IsGroupSelected = true
 				m.selectedGroupIndex = m.highlightedGroupIndex
 			}
 		}
@@ -132,7 +132,7 @@ func (m Model) Width() int {
 }
 
 func (m *Model) Deselect() {
-	m.isSelected = false
+	m.IsGroupSelected = false
 	m.selectedGroupIndex = 0
 	m.SetContent(m.buildContent())
 }
@@ -140,7 +140,7 @@ func (m *Model) Deselect() {
 func (m Model) buildContent() string {
 	var builder strings.Builder
 	groupModels := convertToModel(m.artist)
-	if m.isSelected && m.selectedGroupIndex != m.highlightedGroupIndex {
+	if m.IsGroupSelected && m.selectedGroupIndex != m.highlightedGroupIndex {
 		switch m.moveLocation {
 		case spotify.Top:
 			groupModels.mergeOnTop(m.highlightedGroupIndex, m.selectedGroupIndex)
@@ -151,15 +151,15 @@ func (m Model) buildContent() string {
 	for x, group := range groupModels {
 		var localGroupBuilder strings.Builder
 		localStyle := lipgloss.NewStyle().Inline(true)
-		if m.isSelected && group.index == m.selectedGroupIndex {
+		if m.IsGroupSelected && group.index == m.selectedGroupIndex {
 			localStyle = localStyle.Inherit(selectedText)
-		} else if !m.isSelected && group.index == m.highlightedGroupIndex {
+		} else if !m.IsGroupSelected && group.index == m.highlightedGroupIndex {
 			localStyle = localStyle.Inherit(highlightedText)
 		}
 		localGroupBuilder.WriteString(localStyle.Render(fmt.Sprintln("Group", x, "first index", group.first, "last index", group.last)))
 		localGroupBuilder.WriteString("\n")
 		for songIndex, song := range group.songs {
-			localGroupBuilder.WriteString(localStyle.Render(fmt.Sprintln(songIndex + group.first, song.name)))
+			localGroupBuilder.WriteString(localStyle.Render(fmt.Sprintln(songIndex+group.first, song.name)))
 			localGroupBuilder.WriteString("\n")
 		}
 		localGroupBuilder.WriteString("\n")
