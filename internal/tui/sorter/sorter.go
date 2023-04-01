@@ -93,13 +93,19 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		if it := m.artistsList.SelectedItem(); it != nil {
 			m.songGroups.ChangeArtist(it.(sorter_model.Artist))
 		}
-	case artistsMsg:
-		m.artists = msg.artists
-		m.artistsList.SetItems(convertArtistsToListEntry(m.artists))
+	case list.FilterMatchesMsg:
+		m.artistsList, _ = m.artistsList.Update(msg)
 		if it := m.artistsList.SelectedItem(); it != nil {
 			m.songGroups.ChangeArtist(it.(sorter_model.Artist))
 		}
-		return m, command.StopLoading()
+		return m, nil
+	case artistsMsg:
+		m.artists = msg.artists
+		filterCmd := m.artistsList.SetItems(convertArtistsToListEntry(m.artists))
+		if it := m.artistsList.SelectedItem(); it != nil && m.artistsList.FilterState() == list.Unfiltered {
+			m.songGroups.ChangeArtist(it.(sorter_model.Artist))
+		}
+		return m, tea.Batch(filterCmd, command.StopLoading())
 	case command.SongGroupsUpdateMsg:
 		return m, m.FetchArtists()
 	}
@@ -111,7 +117,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				if msg.String() == "enter" {
 					m.selected = m.artistsList.SelectedItem().FilterValue()
 					m.activeFocus = songGroupFocus
-				} else if msg.String() == "esc" {
+				} else if msg.String() == "esc" && m.artistsList.FilterState() == list.Unfiltered {
 					return m, command.GoBackToPlaylistSelection()
 				}
 			}
