@@ -26,10 +26,13 @@ type SpotifyClient struct {
 func New() *SpotifyClient {
 	client := spotify.New(auth.GetHttpClient())
 	spotifyUser, err := client.CurrentUser(context.Background())
+	newToken, _ := client.Token()
 	if err != nil {
 		auth.RemoveTokenFromKeyring()
-		log.Fatal(err)
+		log.Println(err)
+		panic(err)
 	}
+	auth.UpdateToken(newToken)
 	fmt.Println("You are logged in as:", spotifyUser.ID)
 	return &SpotifyClient{userId: spotifyUser.ID, spotifyApi: client}
 }

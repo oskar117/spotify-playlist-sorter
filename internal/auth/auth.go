@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	cv "github.com/nirasan/go-oauth-pkce-code-verifier"
 	"github.com/zalando/go-keyring"
@@ -39,16 +38,14 @@ func GetOauthToken() *oauth2.Token {
 		fmt.Println("Loading token from keyring")
 		var token oauth2.Token
 		json.Unmarshal([]byte(tokenString), &token)
-		loadClient(&token)
-	} else {
-		url := auth.AuthURL(state,
-			oauth2.SetAuthURLParam("code_challenge_method", "S256"),
-			oauth2.SetAuthURLParam("code_challenge", codeChallenge),
-		)
-		fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
+		return &token
 	}
-	token := <-tokenChannel
-	return token
+	url := auth.AuthURL(state,
+		oauth2.SetAuthURLParam("code_challenge_method", "S256"),
+		oauth2.SetAuthURLParam("code_challenge", codeChallenge),
+	)
+	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
+	return <-tokenChannel
 }
 
 func GetHttpClient() *http.Client {
@@ -56,7 +53,14 @@ func GetHttpClient() *http.Client {
 }
 
 func RemoveTokenFromKeyring() {
+	fmt.Println("Removing tokens")
 	keyring.Delete(service, user)
+}
+
+func UpdateToken(token *oauth2.Token) {
+	fmt.Println("Saving token...")
+	tokenAsString, _ := json.Marshal(token)
+	keyring.Set(service, user, string(tokenAsString))
 }
 
 func startAuthServer() {
@@ -72,25 +76,15 @@ func completeAuth(w http.ResponseWriter, r *http.Request) {
 		oauth2.SetAuthURLParam("code_verifier", codeVerifier.String()))
 	if err != nil {
 		http.Error(w, "Couldn't get token", http.StatusForbidden)
-		log.Fatal(err)
+		log.Println(err)
 	}
 	if st := r.FormValue("state"); st != state {
 		http.NotFound(w, r)
-		log.Fatalf("State mismatch: %s != %s\n", st, state)
+		log.Printf("State mismatch: %s != %s\n", st, state)
 	}
-	fmt.Println("Saving token...")
 	fmt.Fprintf(w, "Login Completed!")
-	tokenAsString, _ := json.Marshal(tok)
-	keyring.Set(service, user, string(tokenAsString))
-	loadClient(tok)
-}
-
-func loadClient(token *oauth2.Token) {
-	fmt.Println("Login Completed!")
-	if m, _ := time.ParseDuration("5m30s"); time.Until(token.Expiry) < m {
-		tokenAsString, _ := json.Marshal(token)
-		keyring.Set(service, user, string(tokenAsString))
-	}
-	tokenChannel <- token
+	fmt.Println("Login completed, returning token!")
+	tokenChannel <- tok
 	close(tokenChannel)
 }
+
