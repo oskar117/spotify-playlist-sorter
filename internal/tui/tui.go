@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -32,9 +33,10 @@ type model struct {
 
 	sorterView sorter.Model
 
-	spinner        spinner.Model
-	loadingMessage string
-	loading		   bool
+	spinner         spinner.Model
+	loadingMessage  string
+	loading         bool
+	loadingMessages []string
 }
 
 func convertPlaylistsToListEntry(playlists []*sorter_model.Playlist) []list.Item {
@@ -58,11 +60,11 @@ func New() *model {
 	spinnerObj.Spinner = spinner.Dot
 
 	return &model{
-		playlistList:   list,
-		activeView:     playlistView,
-		sorterView:     sorter.InitialModel(client),
-		client:         client,
-		spinner:        spinnerObj,
+		playlistList: list,
+		activeView:   playlistView,
+		sorterView:   sorter.InitialModel(client),
+		client:       client,
+		spinner:      spinnerObj,
 	}
 }
 
@@ -85,11 +87,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case playlistsMsg:
 		m.playlistList.SetItems(convertPlaylistsToListEntry(msg.playlists))
 		m.loading = false
+		m.loadingMessages = nil
 	case command.LoadingMsg:
+		m.loadingMessages = append(m.loadingMessages, msg.Message)
 		m.loadingMessage = msg.Message
 		m.loading = true
 		return m, m.spinner.Tick
 	case command.StopLoadingMsg:
+		m.loadingMessages = nil
 		m.loading = false
 	case command.GoBackMessage:
 		m.activeView = playlistView
@@ -122,7 +127,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	if m.loading {
-		return marginStyle.Render(m.spinner.View() + m.loadingMessage)
+		messagesCopy := make([]string, len(m.loadingMessages))
+		lastIndex := len(m.loadingMessages) - 1
+		for i, msg := range m.loadingMessages[:lastIndex+1] {
+			messagesCopy[i] = strings.Repeat(" ", lipgloss.Width(m.spinner.View())) + msg
+		}
+		messagesCopy[lastIndex] = m.spinner.View() + m.loadingMessages[lastIndex]
+		return marginStyle.Render(strings.Join(messagesCopy, "\n"))
 	}
 	switch m.activeView {
 	case sorterView:
