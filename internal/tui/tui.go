@@ -6,11 +6,14 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/oskar117/spotify-playlist-sorter/internal/sorter_model"
 	"github.com/oskar117/spotify-playlist-sorter/internal/spotify"
 	"github.com/oskar117/spotify-playlist-sorter/internal/tui/command"
 	"github.com/oskar117/spotify-playlist-sorter/internal/tui/sorter"
 )
+
+var marginStyle = lipgloss.NewStyle().Margin(1)
 
 type activeView int
 
@@ -72,7 +75,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		h, v := msg.Width, msg.Height
-		m.playlistList.SetSize(h, v)
+		m.playlistList.SetSize(h-2, v-2)
 		m.sorterView, cmd = m.sorterView.Update(msg)
 		return m, cmd
 	case tea.KeyMsg:
@@ -119,13 +122,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	if m.loading {
-		return m.spinner.View() + m.loadingMessage
+		return marginStyle.Render(m.spinner.View() + m.loadingMessage)
 	}
 	switch m.activeView {
 	case sorterView:
 		return m.sorterView.View()
 	case playlistView:
-		return m.playlistList.View()
+		return marginStyle.Render(m.playlistList.View())
 	default:
 		panic("Unknown view value!")
 	}
