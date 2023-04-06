@@ -12,6 +12,7 @@ import (
 	"github.com/oskar117/spotify-playlist-sorter/internal/spotify"
 	"github.com/oskar117/spotify-playlist-sorter/internal/tui/command"
 	"github.com/oskar117/spotify-playlist-sorter/internal/tui/sorter"
+	"github.com/oskar117/spotify-playlist-sorter/internal/util"
 )
 
 var marginStyle = lipgloss.NewStyle().Margin(1)
@@ -36,14 +37,6 @@ type model struct {
 	spinner         spinner.Model
 	loading         bool
 	loadingMessages []string
-}
-
-func convertPlaylistsToListEntry(playlists []*sorter_model.Playlist) []list.Item {
-	listItems := make([]list.Item, len(playlists))
-	for i, v := range playlists {
-		listItems[i] = list.Item(*v)
-	}
-	return listItems
 }
 
 func New() *model {
@@ -82,7 +75,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 	case playlistsMsg:
-		m.playlistList.SetItems(convertPlaylistsToListEntry(msg.playlists))
+		m.playlistList.SetItems(util.ConvertToListEntry(msg.playlists))
 		m.loading = false
 		m.loadingMessages = nil
 	case command.LoadingMsg:
@@ -123,16 +116,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	if m.loading {
-		spinner := m.spinner.View()
-		messagesCopy := make([]string, len(m.loadingMessages))
-		lastIndex := len(m.loadingMessages) - 1
-		if lastIndex > 0 {
-			for i, msg := range m.loadingMessages[:lastIndex] {
-				messagesCopy[i] = strings.Repeat(" ", lipgloss.Width(spinner)) + msg
-			}
-		}
-		messagesCopy[lastIndex] = spinner + m.loadingMessages[lastIndex]
-		return marginStyle.Render(strings.Join(messagesCopy, "\n"))
+		return m.renderLoadingView()
 	}
 	switch m.activeView {
 	case sorterView:
@@ -142,6 +126,19 @@ func (m model) View() string {
 	default:
 		panic("Unknown view value!")
 	}
+}
+
+func (m model) renderLoadingView() string {
+	spinner := m.spinner.View()
+	messagesCopy := make([]string, len(m.loadingMessages))
+	lastIndex := len(m.loadingMessages) - 1
+	if lastIndex > 0 {
+		for i, msg := range m.loadingMessages[:lastIndex] {
+			messagesCopy[i] = strings.Repeat(" ", lipgloss.Width(spinner)) + msg
+		}
+	}
+	messagesCopy[lastIndex] = spinner + m.loadingMessages[lastIndex]
+	return marginStyle.Render(strings.Join(messagesCopy, "\n"))
 }
 
 type playlistsMsg struct {

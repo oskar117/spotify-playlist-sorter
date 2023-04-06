@@ -5,23 +5,12 @@ import (
 	"github.com/oskar117/spotify-playlist-sorter/internal/spotify"
 	"github.com/oskar117/spotify-playlist-sorter/internal/tui/command"
 	"github.com/oskar117/spotify-playlist-sorter/internal/tui/songgroups"
+	"github.com/oskar117/spotify-playlist-sorter/internal/util"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
-
-type activeFocus int
-
-const (
-	listFocus      activeFocus = iota
-	songGroupFocus activeFocus = iota
-)
-
-type ViewArtist struct {
-	Name string
-	Desc string
-}
 
 var (
 	docStyle = lipgloss.NewStyle().
@@ -33,9 +22,12 @@ var (
 				Border(lipgloss.HiddenBorder())
 )
 
-func (i ViewArtist) FilterValue() string { return i.Name }
-func (i ViewArtist) Description() string { return i.Desc }
-func (i ViewArtist) Title() string       { return i.Name }
+type activeFocus int
+
+const (
+	listFocus      activeFocus = iota
+	songGroupFocus activeFocus = iota
+)
 
 type Model struct {
 	artistsList         list.Model
@@ -46,14 +38,6 @@ type Model struct {
 	songGroupsViewWidth int
 	artistListViewWidth int
 	client              *spotify.SpotifyClient
-}
-
-func convertArtistsToListEntry(artists []*sorter_model.Artist) []list.Item {
-	listItems := make([]list.Item, len(artists))
-	for i, v := range artists {
-		listItems[i] = list.Item(*v)
-	}
-	return listItems
 }
 
 func InitialModel(client *spotify.SpotifyClient) Model {
@@ -75,10 +59,6 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		if msg.String() == "ctrl+c" {
-			return m, tea.Quit
-		}
 	case tea.WindowSizeMsg:
 		h, v := msg.Width, msg.Height
 		borderHeight := blurredBorderStyle.GetHorizontalFrameSize()
@@ -97,7 +77,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		return m, nil
 	case artistsMsg:
 		m.artists = msg.artists
-		filterCmd := m.artistsList.SetItems(convertArtistsToListEntry(m.artists))
+		filterCmd := m.artistsList.SetItems(util.ConvertToListEntry(m.artists))
 		if it := m.artistsList.SelectedItem(); it != nil && m.artistsList.FilterState() == list.Unfiltered {
 			m.songGroups.ChangeArtist(it.(sorter_model.Artist))
 		}
