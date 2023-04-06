@@ -2,7 +2,6 @@ package spotify
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/oskar117/spotify-playlist-sorter/internal/auth"
@@ -33,7 +32,7 @@ func New() *SpotifyClient {
 		panic(err)
 	}
 	auth.UpdateToken(newToken)
-	fmt.Println("You are logged in as:", spotifyUser.ID)
+	log.Println("You are logged in as:", spotifyUser.ID)
 	return &SpotifyClient{userId: spotifyUser.ID, spotifyApi: client}
 }
 

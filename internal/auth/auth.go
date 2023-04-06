@@ -35,7 +35,7 @@ func GetOauthToken() *oauth2.Token {
 	startAuthServer()
 	tokenString, err := keyring.Get(service, user)
 	if err == nil {
-		fmt.Println("Loading token from keyring")
+		log.Println("Loading token from keyring")
 		var token oauth2.Token
 		json.Unmarshal([]byte(tokenString), &token)
 		return &token
@@ -53,12 +53,12 @@ func GetHttpClient() *http.Client {
 }
 
 func RemoveTokenFromKeyring() {
-	fmt.Println("Removing tokens")
+	log.Println("Removing tokens")
 	keyring.Delete(service, user)
 }
 
 func UpdateToken(token *oauth2.Token) {
-	fmt.Println("Saving token...")
+	log.Println("Saving token...")
 	tokenAsString, _ := json.Marshal(token)
 	keyring.Set(service, user, string(tokenAsString))
 }
@@ -83,7 +83,7 @@ func completeAuth(w http.ResponseWriter, r *http.Request) {
 		log.Printf("State mismatch: %s != %s\n", st, state)
 	}
 	fmt.Fprintf(w, "Login Completed!")
-	fmt.Println("Login completed, returning token!")
+	log.Println("Login completed, returning token!")
 	tokenChannel <- tok
 	close(tokenChannel)
 }

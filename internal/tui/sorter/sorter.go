@@ -71,10 +71,6 @@ func InitialModel(client *spotify.SpotifyClient) Model {
 	}
 }
 
-func (m Model) Init() tea.Cmd {
-	return nil
-}
-
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	var cmd tea.Cmd

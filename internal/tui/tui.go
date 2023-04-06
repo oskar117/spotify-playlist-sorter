@@ -34,7 +34,6 @@ type model struct {
 	sorterView sorter.Model
 
 	spinner         spinner.Model
-	loadingMessage  string
 	loading         bool
 	loadingMessages []string
 }
@@ -49,10 +48,8 @@ func convertPlaylistsToListEntry(playlists []*sorter_model.Playlist) []list.Item
 
 func New() *model {
 	client := spotify.New()
-	playlists := client.GetPlaylistsFirstPage()
-
 	delegate := list.NewDefaultDelegate()
-	list := list.New(convertPlaylistsToListEntry(playlists), delegate, 0, 0)
+	list := list.New(nil, delegate, 0, 0)
 	list.Title = "Select playlist"
 	list.SetShowHelp(false)
 
@@ -90,7 +87,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loadingMessages = nil
 	case command.LoadingMsg:
 		m.loadingMessages = append(m.loadingMessages, msg.Message)
-		m.loadingMessage = msg.Message
 		m.loading = true
 		return m, m.spinner.Tick
 	case command.StopLoadingMsg:
@@ -127,12 +123,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	if m.loading {
+		spinner := m.spinner.View()
 		messagesCopy := make([]string, len(m.loadingMessages))
 		lastIndex := len(m.loadingMessages) - 1
-		for i, msg := range m.loadingMessages[:lastIndex+1] {
-			messagesCopy[i] = strings.Repeat(" ", lipgloss.Width(m.spinner.View())) + msg
+		if lastIndex > 0 {
+			for i, msg := range m.loadingMessages[:lastIndex] {
+				messagesCopy[i] = strings.Repeat(" ", lipgloss.Width(spinner)) + msg
+			}
 		}
-		messagesCopy[lastIndex] = m.spinner.View() + m.loadingMessages[lastIndex]
+		messagesCopy[lastIndex] = spinner + m.loadingMessages[lastIndex]
 		return marginStyle.Render(strings.Join(messagesCopy, "\n"))
 	}
 	switch m.activeView {
