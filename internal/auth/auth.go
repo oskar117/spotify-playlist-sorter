@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -23,12 +25,11 @@ var (
 			spotifyauth.ScopePlaylistModifyPublic,
 		), spotifyauth.WithClientID("0673725a49f845f0b2ee585d87c0df67"))
 	tokenChannel    = make(chan *oauth2.Token, 1)
-	state           = "abc123"
+	state           = generateState()
 	codeVerifier, _ = cv.CreateCodeVerifier()
 	codeChallenge   = codeVerifier.CodeChallengeS256()
 	service         = "spotify-playlist-sorter"
-	user            = "user"
-	password        = "secret"
+	user            = "default"
 )
 
 func GetOauthToken() *oauth2.Token {
@@ -88,3 +89,8 @@ func completeAuth(w http.ResponseWriter, r *http.Request) {
 	close(tokenChannel)
 }
 
+func generateState() string {
+	bytes := make([]byte, 32)
+	rand.Read(bytes)
+	return hex.EncodeToString(bytes)
+}
